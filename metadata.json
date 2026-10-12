@@ -1,0 +1,6 @@
+{
+  "name": "EduBedrockProxy",
+  "description": "Minecraft Education cloud join code proxy for PowerNukkitX with NetherNet WebRTC transport and signaling inspector.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

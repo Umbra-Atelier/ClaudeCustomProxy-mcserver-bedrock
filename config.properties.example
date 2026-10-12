@@ -1,0 +1,22 @@
+# ========================================================
+# EduBedrockProxy Configuration (Raspberry Pi 4 / PNX)
+# ========================================================
+
+# PowerNukkitX backend target
+pnx.host=127.0.0.1
+pnx.port=19133
+
+# Max concurrent student connections (Keeps resident RAM low on Pi 4)
+max.sessions=10
+
+# Transform Education M365 tokens into vanilla Bedrock player chains
+login.rewrite=true
+
+# Bedrock Protocol version expected by PNX (e.g. 589 for 1.20.0, 618 for 1.20.30)
+target.protocol=589
+
+# Minecraft Franchise Signaling WebSocket Endpoint
+signaling.url=wss://signal.franchise.minecraft-services.net/ws/v1.0/messaging/connect
+
+# Host DTLS SHA-256 Fingerprint for WebRTC SDP answer
+host.fingerprint=1A:2B:3C:4D:5E:6F:70:81:92:A3:B4:C5:D6:E7:F8:09:1A:2B:3C:4D:5E:6F:70:81:92:A3:B4:C5:D6:E7:F8:09
