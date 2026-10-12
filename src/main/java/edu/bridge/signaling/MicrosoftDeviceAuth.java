@@ -56,12 +56,15 @@ public final class MicrosoftDeviceAuth {
                 String cachedJson = Files.readString(cacheFile.toPath(), StandardCharsets.UTF_8);
                 String refreshToken = extractJsonField(cachedJson, "refresh_token");
                 if (!refreshToken.isBlank()) {
-                    LOGGER.info("Found cached login in " + cacheFile.getName() + ". Refreshing session...");
+                    LOGGER.info("Found cached login in " + cacheFile.getName() + ". Checking session...");
                     AuthResult refreshed = refreshAccessToken(refreshToken);
-                    if (refreshed != null) {
+                    if (refreshed != null && isMultiplayerToken(refreshed.accessToken())) {
                         saveCache(refreshed);
-                        LOGGER.info("Session successfully refreshed without prompting.");
+                        LOGGER.info("Session successfully refreshed with Minecraft multiplayer credentials.");
                         return refreshed;
+                    } else {
+                        LOGGER.info("Cached token was not for Minecraft multiplayer audience. Requesting new device code...");
+                        cacheFile.delete();
                     }
                 }
             } catch (Exception ex) {
@@ -73,8 +76,10 @@ public final class MicrosoftDeviceAuth {
         return performDeviceCodeFlow();
     }
 
+    public static final String MINECRAFT_MULTIPLAYER_SCOPE = "api://auth-minecraft-services/multiplayer/.default%20offline_access";
+
     private AuthResult performDeviceCodeFlow() throws IOException, InterruptedException {
-        String body = "client_id=" + clientId + "&scope=openid%20profile%20offline_access";
+        String body = "client_id=" + clientId + "&scope=" + MINECRAFT_MULTIPLAYER_SCOPE;
 
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(DEVICE_CODE_URL))
@@ -178,7 +183,7 @@ public final class MicrosoftDeviceAuth {
             String body = "client_id=" + clientId
                     + "&grant_type=refresh_token"
                     + "&refresh_token=" + refreshToken
-                    + "&scope=openid%20profile%20offline_access";
+                    + "&scope=" + MINECRAFT_MULTIPLAYER_SCOPE;
 
             HttpRequest req = HttpRequest.newBuilder()
                     .uri(URI.create(TOKEN_URL))
@@ -204,6 +209,18 @@ public final class MicrosoftDeviceAuth {
             LOGGER.fine("Failed to refresh token: " + ex.getMessage());
         }
         return null;
+    }
+
+    private static boolean isMultiplayerToken(String jwt) {
+        if (jwt == null || jwt.isBlank()) return false;
+        try {
+            String[] parts = jwt.split("\\.");
+            if (parts.length >= 2) {
+                String payload = new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
+                return payload.contains("api://auth-minecraft-services/multiplayer") || payload.contains("minecraft");
+            }
+        } catch (Exception ignored) {}
+        return false;
     }
 
     private void saveCache(AuthResult result) {
