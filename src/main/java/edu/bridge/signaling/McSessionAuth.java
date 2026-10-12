@@ -23,27 +23,33 @@ import java.util.regex.Pattern;
 public final class McSessionAuth {
     private static final Logger LOGGER = Logger.getLogger(McSessionAuth.class.getName());
 
-    public static final String PLAYFAB_TITLE_ID = "20CA2";
+    public static final String PLAYFAB_TITLE_ID = "6955F";
     public static final String SESSION_START_URL = "https://authorization.franchise.minecraft-services.net/api/v1.0/session/start";
 
     private final HttpClient httpClient;
     private final String customId;
+    private final String titleId;
 
     public record SessionClaims(String authorizationHeader, String pmid, Instant expiration) {}
 
     public McSessionAuth() {
-        this(UUID.randomUUID().toString());
+        this(UUID.randomUUID().toString(), PLAYFAB_TITLE_ID);
     }
 
     public McSessionAuth(String customId) {
-        this(HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(10))
-                .build(), customId);
+        this(customId, PLAYFAB_TITLE_ID);
     }
 
-    public McSessionAuth(HttpClient httpClient, String customId) {
+    public McSessionAuth(String customId, String titleId) {
+        this(HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(10))
+                .build(), customId, titleId);
+    }
+
+    public McSessionAuth(HttpClient httpClient, String customId, String titleId) {
         this.httpClient = Objects.requireNonNull(httpClient);
         this.customId = Objects.requireNonNull(customId);
+        this.titleId = (titleId != null && !titleId.isBlank()) ? titleId : PLAYFAB_TITLE_ID;
     }
 
     /**
@@ -55,8 +61,8 @@ public final class McSessionAuth {
     }
 
     private String fetchPlayFabEntityToken(String id) throws IOException, InterruptedException {
-        String url = "https://" + PLAYFAB_TITLE_ID + ".playfabapi.com/Client/LoginWithCustomID";
-        String body = "{\"CreateAccount\":true,\"CustomId\":\"" + escapeJson(id) + "\",\"TitleId\":\"" + PLAYFAB_TITLE_ID + "\"}";
+        String url = "https://" + titleId + ".playfabapi.com/Client/LoginWithCustomID";
+        String body = "{\"CreateAccount\":true,\"CustomId\":\"" + escapeJson(id) + "\",\"TitleId\":\"" + titleId + "\"}";
 
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(url))
@@ -84,7 +90,7 @@ public final class McSessionAuth {
     }
 
     private SessionClaims fetchSessionStartToken(String playfabToken) throws IOException, InterruptedException {
-        String body = "{\"device\":{\"platform\":\"Windows\"},\"titleId\":\"" + PLAYFAB_TITLE_ID + "\"}";
+        String body = "{\"device\":{\"platform\":\"Windows\"},\"titleId\":\"" + titleId + "\"}";
 
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(SESSION_START_URL))

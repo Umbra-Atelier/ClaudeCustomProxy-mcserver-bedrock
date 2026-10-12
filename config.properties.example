@@ -1,5 +1,5 @@
 # ========================================================
-# EduBedrockProxy Configuration (Raspberry Pi 4 / PNX)
+# EduBedrockProxy Configuration (Laptop / Raspberry Pi 4)
 # ========================================================
 
 # PowerNukkitX backend target
@@ -17,6 +17,14 @@ target.protocol=589
 
 # Minecraft Franchise Signaling WebSocket Endpoint
 signaling.url=wss://signal.franchise.minecraft-services.net/ws/v1.0/messaging/connect
+
+# PlayFab Title ID for Minecraft Education Edition (default: 6955F)
+playfab.title_id=6955F
+
+# (Optional) Pre-existing Authorization Bearer token.
+# If provided, EduBedrockProxy uses this token directly to connect to the signaling WebSocket.
+# auth.header=Bearer eyJhbGci...
+# auth.pmid=your-registered-pmid
 
 # Host DTLS SHA-256 Fingerprint for WebRTC SDP answer
 host.fingerprint=1A:2B:3C:4D:5E:6F:70:81:92:A3:B4:C5:D6:E7:F8:09:1A:2B:3C:4D:5E:6F:70:81:92:A3:B4:C5:D6:E7:F8:09

@@ -40,14 +40,29 @@ public final class EduBedrockProxyApp {
             proxySession.initialize();
         });
 
-        // Initialize PlayFab & Franchise signaling session authentication
-        McSessionAuth sessionAuth = new McSessionAuth();
-        McSessionAuth.SessionClaims claims = sessionAuth.authenticate();
-        LOGGER.info("Authenticated Signaling identity: PMID=" + claims.pmid() + ", Expires=" + claims.expiration());
+        // Initialize Signaling session authentication
+        java.util.function.Supplier<String> authSupplier;
+        if (config.authHeader() != null && !config.authHeader().isBlank()) {
+            String header = config.authHeader().startsWith("Bearer ") ? config.authHeader() : "Bearer " + config.authHeader();
+            LOGGER.info("Using configured auth.header from config.properties [PMID: " + config.authPmid() + "]");
+            authSupplier = () -> header;
+        } else {
+            LOGGER.info("Authenticating with PlayFab (Title ID: " + config.playfabTitleId() + ")...");
+            try {
+                McSessionAuth sessionAuth = new McSessionAuth(java.util.UUID.randomUUID().toString(), config.playfabTitleId());
+                McSessionAuth.SessionClaims claims = sessionAuth.authenticate();
+                LOGGER.info("Authenticated Signaling identity: PMID=" + claims.pmid() + ", Expires=" + claims.expiration());
+                authSupplier = sessionAuth.cachedSupplier();
+            } catch (Exception ex) {
+                LOGGER.warning("Automatic PlayFab/Franchise authentication failed: " + ex.getMessage());
+                LOGGER.warning("Tip: You can pass a valid signaling token directly in config.properties via 'auth.header=Bearer ...'");
+                throw ex;
+            }
+        }
 
         SignalingClient client = new SignalingClient(
                 URI.create(config.signalingWsUrl()),
-                sessionAuth.cachedSupplier(),
+                authSupplier,
                 router
         );
 

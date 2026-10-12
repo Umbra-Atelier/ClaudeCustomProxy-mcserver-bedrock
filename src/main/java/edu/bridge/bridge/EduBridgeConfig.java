@@ -15,7 +15,10 @@ public record EduBridgeConfig(
         boolean rewriteEduLogin,
         int targetProtocolVersion,
         String signalingWsUrl,
-        String hostFingerprintSha256
+        String hostFingerprintSha256,
+        String authHeader,
+        String authPmid,
+        String playfabTitleId
 ) {
 
     public static EduBridgeConfig loadOrDefault(File configFile) {
@@ -26,6 +29,9 @@ public record EduBridgeConfig(
         int targetProto = 589;
         String wsUrl = "wss://signal.franchise.minecraft-services.net/ws/v1.0/messaging/connect";
         String hostFp = "1A:2B:3C:4D:5E:6F:70:81:92:A3:B4:C5:D6:E7:F8:09:1A:2B:3C:4D:5E:6F:70:81:92:A3:B4:C5:D6:E7:F8:09";
+        String authHeader = "";
+        String authPmid = "";
+        String playfabTitleId = "6955F";
 
         if (configFile != null && configFile.exists()) {
             try (InputStream in = new FileInputStream(configFile)) {
@@ -39,9 +45,12 @@ public record EduBridgeConfig(
                 targetProto = Integer.parseInt(props.getProperty("target.protocol", String.valueOf(targetProto)));
                 wsUrl = props.getProperty("signaling.url", wsUrl);
                 hostFp = props.getProperty("host.fingerprint", hostFp);
+                authHeader = props.getProperty("auth.header", authHeader);
+                authPmid = props.getProperty("auth.pmid", authPmid);
+                playfabTitleId = props.getProperty("playfab.title_id", playfabTitleId);
             } catch (Exception ignored) {}
         }
 
-        return new EduBridgeConfig(host, port, maxSessions, rewrite, targetProto, wsUrl, hostFp);
+        return new EduBridgeConfig(host, port, maxSessions, rewrite, targetProto, wsUrl, hostFp, authHeader, authPmid, playfabTitleId);
     }
 }
