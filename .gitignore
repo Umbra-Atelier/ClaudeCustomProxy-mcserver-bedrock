@@ -6,3 +6,12 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Build outputs
+target/
+bin/
+
+# Local configuration and cached authentication tokens (NEVER EXPOSE)
+config.properties
+.auth_cache.json
+*.auth_cache.json

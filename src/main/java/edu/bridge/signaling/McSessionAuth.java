@@ -90,7 +90,19 @@ public final class McSessionAuth {
     }
 
     private SessionClaims fetchSessionStartToken(String playfabToken) throws IOException, InterruptedException {
-        String body = "{\"device\":{\"platform\":\"Windows\"},\"titleId\":\"" + titleId + "\"}";
+        String body = "{"
+                + "\"titleId\":\"" + escapeJson(titleId) + "\","
+                + "\"user\":{\"type\":\"PlayFab\",\"token\":\"" + escapeJson(playfabToken) + "\"},"
+                + "\"device\":{"
+                + "\"id\":\"" + UUID.randomUUID() + "\","
+                + "\"platform\":\"Windows\","
+                + "\"type\":\"Desktop\","
+                + "\"memory\":8589934592,"
+                + "\"gameVersion\":\"1.20.0\","
+                + "\"storePlatform\":\"Unknown\","
+                + "\"applicationType\":0"
+                + "}"
+                + "}";
 
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(SESSION_START_URL))
