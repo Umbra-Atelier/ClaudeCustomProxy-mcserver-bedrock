@@ -78,62 +78,56 @@ public final class SignalingRouter implements SignalingClient.Listener {
             SignalingMessage sigMsg = SignalingMessage.parse(line);
             String connId = sigMsg.connectionId();
 
-            switch (sigMsg) {
-                case SignalingMessage.ConnectRequest cr -> {
-                    LOGGER.info("[SignalingRouter] Received CONNECTREQUEST for connection " + connId + " from " + req.from());
+            if (sigMsg instanceof SignalingMessage.ConnectRequest cr) {
+                LOGGER.info("[SignalingRouter] Received CONNECTREQUEST for connection " + connId + " from " + req.from());
 
-                    if (sessions.size() >= maxConcurrentSessions) {
-                        LOGGER.warning("[SignalingRouter] Session limit reached (" + maxConcurrentSessions + "). Rejecting " + connId);
-                        sendConnectError(client, req.from(), netherNetId, connId, 1);
-                        return;
-                    }
-
-                    NetherNetSession session = new NetherNetSession(connId, req.from(), netherNetId);
-                    SdpParser.OfferDetails offer = SdpParser.parse(cr.sdpOffer());
-                    session.setOfferDetails(offer);
-
-                    String sdpAnswer = answerBuilder.buildAnswer(offer);
-                    session.setAnswerSdp(sdpAnswer);
-                    session.setState(NetherNetSession.State.ANSWER_SENT);
-
-                    sessions.put(connId, session);
-
-                    // Notify new session handler
-                    if (newSessionHandler != null) {
-                        newSessionHandler.accept(session);
-                    }
-
-                    // Send CONNECTRESPONSE
-                    String connectResponseLine = SignalingMessage.formatConnectResponse(connId, sdpAnswer);
-                    long outRpcId = rpcIdSeq.incrementAndGet();
-                    String sendReq = JsonRpc.createSendMessageRequest(outRpcId, req.from(), netherNetId, connectResponseLine);
-
-                    LOGGER.info("[SignalingRouter] Sending CONNECTRESPONSE for connection " + connId);
-                    client.sendText(sendReq);
+                if (sessions.size() >= maxConcurrentSessions) {
+                    LOGGER.warning("[SignalingRouter] Session limit reached (" + maxConcurrentSessions + "). Rejecting " + connId);
+                    sendConnectError(client, req.from(), netherNetId, connId, 1);
+                    return;
                 }
 
-                case SignalingMessage.CandidateAdd ca -> {
-                    NetherNetSession session = sessions.get(connId);
-                    if (session != null) {
-                        IceCandidate candidate = IceCandidate.parse(ca.candidateLine());
-                        session.addClientCandidate(candidate);
-                    } else {
-                        LOGGER.warning("[SignalingRouter] Received CANDIDATEADD for unknown connection " + connId);
-                    }
+                NetherNetSession session = new NetherNetSession(connId, req.from(), netherNetId);
+                SdpParser.OfferDetails offer = SdpParser.parse(cr.sdpOffer());
+                session.setOfferDetails(offer);
+
+                String sdpAnswer = answerBuilder.buildAnswer(offer);
+                session.setAnswerSdp(sdpAnswer);
+                session.setState(NetherNetSession.State.ANSWER_SENT);
+
+                sessions.put(connId, session);
+
+                // Notify new session handler
+                if (newSessionHandler != null) {
+                    newSessionHandler.accept(session);
                 }
 
-                case SignalingMessage.ConnectError ce -> {
-                    LOGGER.warning("[SignalingRouter] Received CONNECTERROR for connection " + connId + " code: " + ce.errorCode());
-                    NetherNetSession session = sessions.remove(connId);
-                    if (session != null) {
-                        session.close();
-                    }
+                // Send CONNECTRESPONSE
+                String connectResponseLine = SignalingMessage.formatConnectResponse(connId, sdpAnswer);
+                long outRpcId = rpcIdSeq.incrementAndGet();
+                String sendReq = JsonRpc.createSendMessageRequest(outRpcId, req.from(), netherNetId, connectResponseLine);
+
+                LOGGER.info("[SignalingRouter] Sending CONNECTRESPONSE for connection " + connId);
+                client.sendText(sendReq);
+
+            } else if (sigMsg instanceof SignalingMessage.CandidateAdd ca) {
+                NetherNetSession session = sessions.get(connId);
+                if (session != null) {
+                    IceCandidate candidate = IceCandidate.parse(ca.candidateLine());
+                    session.addClientCandidate(candidate);
+                } else {
+                    LOGGER.warning("[SignalingRouter] Received CANDIDATEADD for unknown connection " + connId);
                 }
 
-                case SignalingMessage.Unknown unk -> {
-                    LOGGER.warning("[SignalingRouter] Unknown signaling verb for connection " + connId + ": " + unk.rawMessage());
+            } else if (sigMsg instanceof SignalingMessage.ConnectError ce) {
+                LOGGER.warning("[SignalingRouter] Received CONNECTERROR for connection " + connId + " code: " + ce.errorCode());
+                NetherNetSession session = sessions.remove(connId);
+                if (session != null) {
+                    session.close();
                 }
-                default -> {}
+
+            } else if (sigMsg instanceof SignalingMessage.Unknown unk) {
+                LOGGER.warning("[SignalingRouter] Unknown signaling verb for connection " + connId + ": " + unk.rawMessage());
             }
 
         } catch (Exception ex) {

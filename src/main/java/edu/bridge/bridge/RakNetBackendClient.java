@@ -204,7 +204,8 @@ public final class RakNetBackendClient implements AutoCloseable {
 
     private void sendOpenConnectionRequest2() {
         try {
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            java.io.DataOutputStream out = new java.io.DataOutputStream(baos);
             out.write(ID_OPEN_CONNECTION_REQUEST_2);
             out.write(RAKNET_MAGIC);
             // Server address
@@ -214,21 +215,24 @@ public final class RakNetBackendClient implements AutoCloseable {
             out.write(backendAddress.getPort() & 0xFF);
             out.writeShort(1400); // MTU
             out.writeLong(123456789L); // Client GUID
+            out.flush();
 
-            byte[] b = out.toByteArray();
+            byte[] b = baos.toByteArray();
             socket.send(new DatagramPacket(b, b.length, backendAddress));
         } catch (Exception ignored) {}
     }
 
     private void sendConnectionRequest() {
         try {
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            java.io.DataOutputStream out = new java.io.DataOutputStream(baos);
             out.write(ID_CONNECTION_REQUEST);
             out.writeLong(123456789L); // Client GUID
             out.writeLong(System.currentTimeMillis());
             out.write(0x00); // Security flag
+            out.flush();
 
-            sendToBackend(out.toByteArray());
+            sendToBackend(baos.toByteArray());
         } catch (Exception ignored) {}
     }
 
